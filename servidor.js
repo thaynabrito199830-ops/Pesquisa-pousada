@@ -1,47 +1,24 @@
 const express = require('express');
+const session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-
+const crypto = require('crypto');
 const app = express();
 const db = new sqlite3.Database(path.join(__dirname, 'respostas.db'));
-
-app.use(express.json({ limit: '20kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-db.run(`CREATE TABLE IF NOT EXISTS respostas (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  nota INTEGER NOT NULL CHECK(nota BETWEEN 1 AND 5),
-  limpeza INTEGER NOT NULL CHECK(limpeza BETWEEN 1 AND 5),
-  atendimento INTEGER NOT NULL CHECK(atendimento BETWEEN 1 AND 5),
-  recomendaria TEXT NOT NULL CHECK(recomendaria IN ('sim','nao')),
-  comentario TEXT,
-  criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-)`);
-
-app.post('/api/respostas', (req, res) => {
-  const { nota, limpeza, atendimento, recomendaria, comentario = '' } = req.body;
-  const numeros = [nota, limpeza, atendimento].map(Number);
-  if (numeros.some(n => !Number.isInteger(n) || n < 1 || n > 5) || !['sim','nao'].includes(recomendaria)) {
-    return res.status(400).json({ mensagem: 'Revise os campos obrigatórios.' });
-  }
-  const texto = String(comentario).trim().slice(0, 1000);
-  db.run(
-    `INSERT INTO respostas (nota, limpeza, atendimento, recomendaria, comentario)
-     VALUES (?, ?, ?, ?, ?)`,
-    [...numeros, recomendaria, texto],
-    function (erro) {
-      if (erro) return res.status(500).json({ mensagem: 'Não foi possível registrar a resposta.' });
-      res.status(201).json({ mensagem: 'Obrigado! Sua opinião foi registrada.', id: this.lastID });
-    }
-  );
-});
-
-app.get('/api/respostas', (req, res) => {
-  db.all(`SELECT id, nota, limpeza, atendimento, recomendaria, comentario, criado_em
-          FROM respostas ORDER BY id DESC`, [], (erro, linhas) => {
-    if (erro) return res.status(500).json({ mensagem: 'Não foi possível consultar as respostas.' });
-    res.json(linhas);
-  });
-});
-
-app.listen(3000, () => console.log('Abra http://localhost:3000'));
+const PORT = process.env.PORT || 3000;
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'troque-esta-senha';
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+app.set('trust proxy', 1);
+app.use(express.json({limit:'20kb'}));
+app.use(express.urlencoded({extended:false}));
+app.use(session({secret:SESSION_SECRET,resave:false,saveUninitialized:false,cookie:{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',maxAge:30*60*1000}}));
+app.use(express.static(path.join(__dirname,'public')));
+db.run(`CREATE TABLE IF NOT EXISTS respostas (id INTEGER PRIMARY KEY AUTOINCREMENT,nota INTEGER NOT NULL CHECK(nota BETWEEN 1 AND 5),limpeza INTEGER NOT NULL CHECK(limpeza BETWEEN 1 AND 5),atendimento INTEGER NOT NULL CHECK(atendimento BETWEEN 1 AND 5),recomendaria TEXT NOT NULL CHECK(recomendaria IN ('sim','nao')),comentario TEXT,criado_em TEXT DEFAULT CURRENT_TIMESTAMP)`);
+const protegido=(req,res,next)=>req.session.admin?next():res.status(401).json({mensagem:'Acesso não autorizado.'});
+app.post('/api/respostas',(req,res)=>{const{nota,limpeza,atendimento,recomendaria,comentario=''}=req.body;const nums=[nota,limpeza,atendimento].map(Number);if(nums.some(n=>!Number.isInteger(n)||n<1||n>5)||!['sim','nao'].includes(recomendaria))return res.status(400).json({mensagem:'Revise os campos obrigatórios.'});db.run(`INSERT INTO respostas(nota,limpeza,atendimento,recomendaria,comentario) VALUES(?,?,?,?,?)`,[...nums,recomendaria,String(comentario).trim().slice(0,1000)],function(err){if(err)return res.status(500).json({mensagem:'Erro ao registrar.'});res.status(201).json({mensagem:'Obrigado! Sua opinião foi registrada.',id:this.lastID});});});
+app.post('/api/login',(req,res)=>{const user=String(req.body.usuario||'');const pass=String(req.body.senha||'');if(user===ADMIN_USER&&pass===ADMIN_PASSWORD){req.session.admin=true;return res.json({mensagem:'Login realizado.'});}res.status(401).json({mensagem:'Usuário ou senha incorretos.'});});
+app.post('/api/logout',(req,res)=>req.session.destroy(()=>res.json({mensagem:'Sessão encerrada.'})));
+app.get('/api/sessao',(req,res)=>res.json({autenticado:!!req.session.admin}));
+app.get('/api/respostas',protegido,(req,res)=>db.all(`SELECT id,nota,limpeza,atendimento,recomendaria,comentario,criado_em FROM respostas ORDER BY id DESC`,[],(err,rows)=>err?res.status(500).json({mensagem:'Erro ao consultar.'}):res.json(rows)));
+app.listen(PORT,'0.0.0.0',()=>console.log(`Servidor ativo na porta ${PORT}`));
