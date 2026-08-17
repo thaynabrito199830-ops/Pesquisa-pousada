@@ -2,7 +2,6 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
@@ -103,28 +102,37 @@
   <main class="wrap">
     <div class="top">
       <h1>Painel administrativo</h1>
-      <button id="sair" type="button">Sair</button>
+
+      <button id="sair" type="button">
+        Sair
+      </button>
     </div>
 
     <div class="tabs">
       <button
+        id="abaAvaliacoes"
         type="button"
-        onclick="mostrar('avaliacoes')"
       >
         Avaliações
       </button>
 
       <button
+        id="abaAcessos"
         type="button"
-        onclick="mostrar('acessos')"
       >
         Acessos
       </button>
     </div>
 
-    <div id="mensagem" class="mensagem"></div>
+    <div
+      id="mensagem"
+      class="mensagem"
+    ></div>
 
-    <section id="avaliacoes" class="on">
+    <section
+      id="avaliacoes"
+      class="on"
+    >
       <h2>Avaliações</h2>
 
       <button
@@ -201,24 +209,26 @@
   </main>
 
   <script>
-    const rr = document.getElementById('rr');
-    const ra = document.getElementById('ra');
+    const rr =
+      document.getElementById('rr');
+
+    const ra =
+      document.getElementById('ra');
 
     const mensagem =
       document.getElementById('mensagem');
 
     function escapar(valor) {
-      return String(valor ?? '')
-        .replace(
-          /[&<>"']/g,
-          caractere => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-          })[caractere]
-        );
+      return String(valor ?? '').replace(
+        /[&<>"']/g,
+        caractere => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        })[caractere]
+      );
     }
 
     function mostrar(id) {
@@ -239,6 +249,15 @@
       if (resposta.status === 401) {
         window.location.href = '/login.html';
         return [];
+      }
+
+      if (!resposta.ok) {
+        const resultado = await resposta.json();
+
+        throw new Error(
+          resultado.mensagem ||
+          'Erro ao consultar registros.'
+        );
       }
 
       return resposta.json();
@@ -266,13 +285,26 @@
               </td>
 
               <td>${item.id}</td>
-              <td>${escapar(item.identificacao)}</td>
+
+              <td>
+                ${escapar(item.identificacao)}
+              </td>
+
               <td>${item.nota}</td>
               <td>${item.limpeza}</td>
               <td>${item.atendimento}</td>
-              <td>${escapar(item.recomendaria)}</td>
-              <td>${escapar(item.comentario)}</td>
-              <td>${escapar(item.criado_em)}</td>
+
+              <td>
+                ${escapar(item.recomendaria)}
+              </td>
+
+              <td>
+                ${escapar(item.comentario)}
+              </td>
+
+              <td>
+                ${escapar(item.criado_em)}
+              </td>
             </tr>
           `)
           .join('');
@@ -289,25 +321,38 @@
               </td>
 
               <td>${item.id}</td>
-              <td>${escapar(item.identificacao)}</td>
-              <td>${escapar(item.nome)}</td>
-              <td>${escapar(item.apelido)}</td>
-              <td>${escapar(item.criado_em)}</td>
+
+              <td>
+                ${escapar(item.identificacao)}
+              </td>
+
+              <td>
+                ${escapar(item.nome)}
+              </td>
+
+              <td>
+                ${escapar(item.apelido)}
+              </td>
+
+              <td>
+                ${escapar(item.criado_em)}
+              </td>
             </tr>
           `)
           .join('');
 
-        document.getElementById(
-          'todosAvaliacoes'
-        ).checked = false;
+        document
+          .getElementById('todosAvaliacoes')
+          .checked = false;
 
-        document.getElementById(
-          'todosAcessos'
-        ).checked = false;
+        document
+          .getElementById('todosAcessos')
+          .checked = false;
       } catch (erro) {
         console.error(erro);
 
         mensagem.textContent =
+          erro.message ||
           'Não foi possível carregar os registros.';
       }
     }
@@ -328,11 +373,36 @@
         document.querySelectorAll(
           `${seletor}:checked`
         )
-      ).map(caixa => Number(caixa.value));
+      ).map(
+        caixa => Number(caixa.value)
+      );
     }
 
     async function excluirRegistros(
       rota,
       seletor
     ) {
-      const ids = obterSelecionados(seletor);
+      const ids =
+        obterSelecionados(seletor);
+
+      if (ids.length === 0) {
+        alert(
+          'Selecione pelo menos um registro.'
+        );
+
+        return;
+      }
+
+      const confirmou = window.confirm(
+        `Excluir permanentemente ${ids.length} registro(s)?`
+      );
+
+      if (!confirmou) {
+        return;
+      }
+
+      mensagem.textContent = 'Excluindo...';
+
+      try {
+        const resposta = await fetch(rota, {
+          method
