@@ -20,7 +20,6 @@ const SESSION_SECRET =
   crypto.randomBytes(32).toString('hex');
 
 app.set('trust proxy', 1);
-
 app.use(express.json({ limit: '20kb' }));
 
 app.use(
@@ -41,9 +40,7 @@ app.use(
   express.static(path.join(__dirname, 'public'))
 );
 
-/*
-  BANCO DE DADOS
-*/
+/* BANCO DE DADOS */
 
 db.serialize(() => {
   db.run(`
@@ -55,11 +52,6 @@ db.serialize(() => {
       criado_em TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
-  /*
-    Adiciona as novas colunas ao banco antigo,
-    caso elas ainda não existam.
-  */
 
   db.all(
     'PRAGMA table_info(acessos)',
@@ -73,9 +65,8 @@ db.serialize(() => {
         return;
       }
 
-      const nomesDasColunas = colunas.map(
-        coluna => coluna.name
-      );
+      const nomesDasColunas =
+        colunas.map(coluna => coluna.name);
 
       if (!nomesDasColunas.includes('nome')) {
         db.run(
@@ -125,9 +116,7 @@ db.serialize(() => {
   `);
 });
 
-/*
-  PROTEÇÃO DO PAINEL ADMINISTRATIVO
-*/
+/* PROTEÇÃO ADMINISTRATIVA */
 
 const protegido = (req, res, next) => {
   if (req.session.admin) {
@@ -139,9 +128,7 @@ const protegido = (req, res, next) => {
   });
 };
 
-/*
-  REGISTRO DO PARTICIPANTE
-*/
+/* REGISTRAR PARTICIPANTE */
 
 app.post('/api/entrada', (req, res) => {
   const nome = String(req.body.nome || '')
@@ -199,9 +186,7 @@ app.post('/api/entrada', (req, res) => {
   );
 });
 
-/*
-  PARTICIPANTE DA SESSÃO
-*/
+/* CONSULTAR PARTICIPANTE ATUAL */
 
 app.get('/api/participante', (req, res) => {
   const participante = req.session.participante;
@@ -223,16 +208,15 @@ app.get('/api/participante', (req, res) => {
   });
 });
 
-/*
-  REGISTRO DA PESQUISA
-*/
+/* REGISTRAR AVALIAÇÃO */
 
 app.post('/api/respostas', (req, res) => {
   const participante = req.session.participante;
 
   if (!participante) {
     return res.status(401).json({
-      mensagem: 'Identifique-se antes de responder.'
+      mensagem:
+        'Identifique-se antes de responder.'
     });
   }
 
@@ -293,7 +277,8 @@ app.post('/api/respostas', (req, res) => {
         );
 
         return res.status(500).json({
-          mensagem: 'Erro ao registrar a avaliação.'
+          mensagem:
+            'Erro ao registrar a avaliação.'
         });
       }
 
@@ -306,9 +291,7 @@ app.post('/api/respostas', (req, res) => {
   );
 });
 
-/*
-  LOGIN ADMINISTRATIVO
-*/
+/* LOGIN ADMINISTRATIVO */
 
 app.post('/api/login', (req, res) => {
   const usuario = String(req.body.usuario || '');
@@ -330,9 +313,7 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-/*
-  LOGOUT
-*/
+/* LOGOUT */
 
 app.post('/api/logout', (req, res) => {
   req.session.destroy(() => {
@@ -342,9 +323,7 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-/*
-  CONSULTAR AVALIAÇÕES
-*/
+/* CONSULTAR AVALIAÇÕES */
 
 app.get(
   '/api/respostas',
@@ -355,4 +334,68 @@ app.get(
       [],
       (erro, resultados) => {
         if (erro) {
-          
+          console.error(
+            'Erro ao consultar avaliações:',
+            erro
+          );
+
+          return res.status(500).json({
+            mensagem:
+              'Erro ao consultar as avaliações.'
+          });
+        }
+
+        return res.json(resultados);
+      }
+    );
+  }
+);
+
+/* CONSULTAR ACESSOS */
+
+app.get(
+  '/api/acessos',
+  protegido,
+  (req, res) => {
+    db.all(
+      `
+        SELECT
+          id,
+          identificacao,
+          nome,
+          apelido,
+          criado_em
+        FROM acessos
+        ORDER BY id DESC
+      `,
+      [],
+      (erro, resultados) => {
+        if (erro) {
+          console.error(
+            'Erro ao consultar acessos:',
+            erro
+          );
+
+          return res.status(500).json({
+            mensagem:
+              'Erro ao consultar os acessos.'
+          });
+        }
+
+        return res.json(resultados);
+      }
+    );
+  }
+);
+
+/* INICIAR SERVIDOR */
+
+app.listen(
+  PORT,
+  '0.0.0.0',
+  () => {
+    console.log(
+      `Servidor ativo na porta ${PORT}`
+    );
+  }
+);
