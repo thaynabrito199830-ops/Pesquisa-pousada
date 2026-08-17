@@ -2,11 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
   >
 
+  <title>Pesquisa</title>
 
   <style>
     * {
@@ -47,20 +49,7 @@
       display: block;
       width: 140px;
       height: auto;
-      margin: 0 auto 25px;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 20px;
-      margin-bottom: 12px;
-    }
-
-    .sub {
-      text-align: center;
-      color: #555;
-      font-size: 14px;
-      margin-bottom: 24px;
+      margin: 0 auto 32px;
     }
 
     label {
@@ -73,9 +62,9 @@
       width: 100%;
       height: 42px;
       padding: 10px;
+      margin-bottom: 18px;
       border: 1px solid #d0d0d0;
       border-radius: 6px;
-      margin-bottom: 18px;
       background: #fff;
       font-size: 15px;
     }
@@ -117,19 +106,15 @@
 
 <body>
   <form class="card" id="formEntrada">
+
     <img
       class="logo"
       src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"
       alt="Google"
     >
 
-  
-
-    <p class="sub">
-      Preencha seus dados para iniciar a pesquisa.
-    </p>
-
     <label for="nome">Nome Completo</label>
+
     <input
       id="nome"
       name="nome"
@@ -140,6 +125,7 @@
     >
 
     <label for="apelido">Apelido</label>
+
     <input
       id="apelido"
       name="apelido"
@@ -204,11 +190,42 @@
         try {
           const resposta = await fetch('/api/entrada', {
             method: 'POST',
+
             headers: {
               'Content-Type': 'application/json'
             },
+
             body: JSON.stringify({
               nome: nome,
               apelido: apelido
             })
-          
+          });
+
+          const resultado = await resposta.json();
+
+          if (!resposta.ok) {
+            mensagem.textContent =
+              resultado.mensagem ||
+              'Não foi possível registrar a entrada.';
+
+            return;
+          }
+
+          window.location.href = '/';
+
+        } catch (erro) {
+          console.error(erro);
+
+          mensagem.textContent =
+            'Não foi possível conectar ao servidor.';
+
+        } finally {
+          botaoEntrar.disabled = false;
+          botaoEntrar.textContent =
+            'Entrar na pesquisa';
+        }
+      }
+    );
+  </script>
+</body>
+</html>
