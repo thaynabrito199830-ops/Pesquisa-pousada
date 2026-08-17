@@ -30,7 +30,6 @@ const db = new Pool({
 });
 
 app.set('trust proxy', 1);
-
 app.use(express.json({ limit: '20kb' }));
 
 app.use(
@@ -113,8 +112,7 @@ app.post('/api/entrada', async (req, res) => {
       });
     }
 
-    const identificacao =
-      `${nome} (${apelido})`;
+    const identificacao = `${nome} (${apelido})`;
 
     const resultado = await db.query(
       `
@@ -153,11 +151,10 @@ app.post('/api/entrada', async (req, res) => {
   }
 });
 
-/* CONSULTAR PARTICIPANTE ATUAL */
+/* PARTICIPANTE ATUAL */
 
 app.get('/api/participante', (req, res) => {
-  const participante =
-    req.session.participante;
+  const participante = req.session.participante;
 
   if (!participante) {
     return res.json({
@@ -170,8 +167,7 @@ app.get('/api/participante', (req, res) => {
 
   return res.json({
     identificado: true,
-    identificacao:
-      participante.identificacao,
+    identificacao: participante.identificacao,
     nome: participante.nome,
     apelido: participante.apelido
   });
@@ -205,13 +201,12 @@ app.post('/api/respostas', async (req, res) => {
       atendimento
     ].map(Number);
 
-    const notasInvalidas =
-      valores.some(
-        valor =>
-          !Number.isInteger(valor) ||
-          valor < 1 ||
-          valor > 5
-      );
+    const notasInvalidas = valores.some(
+      valor =>
+        !Number.isInteger(valor) ||
+        valor < 1 ||
+        valor > 5
+    );
 
     if (
       notasInvalidas ||
@@ -251,143 +246,4 @@ app.post('/api/respostas', async (req, res) => {
         'Obrigado! Sua opinião foi registrada.',
       id: resultado.rows[0].id
     });
-  } catch (erro) {
-    console.error(
-      'Erro ao registrar avaliação:',
-      erro
-    );
-
-    return res.status(500).json({
-      mensagem:
-        'Erro ao registrar a avaliação.'
-    });
-  }
-});
-
-/* LOGIN ADMINISTRATIVO */
-
-app.post('/api/login', (req, res) => {
-  const usuario =
-    String(req.body.usuario || '');
-
-  const senha =
-    String(req.body.senha || '');
-
-  if (
-    usuario === ADMIN_USER &&
-    senha === ADMIN_PASSWORD
-  ) {
-    req.session.admin = true;
-
-    return res.json({
-      mensagem: 'Login realizado.'
-    });
-  }
-
-  return res.status(401).json({
-    mensagem:
-      'Usuário ou senha incorretos.'
-  });
-});
-
-/* LOGOUT */
-
-app.post('/api/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.json({
-      mensagem: 'Sessão encerrada.'
-    });
-  });
-});
-
-/* CONSULTAR AVALIAÇÕES */
-
-app.get(
-  '/api/respostas',
-  protegido,
-  async (req, res) => {
-    try {
-      const resultado = await db.query(`
-        SELECT *
-        FROM respostas
-        ORDER BY id DESC
-      `);
-
-      return res.json(resultado.rows);
-    } catch (erro) {
-      console.error(
-        'Erro ao consultar avaliações:',
-        erro
-      );
-
-      return res.status(500).json({
-        mensagem:
-          'Erro ao consultar as avaliações.'
-      });
-    }
-  }
-);
-
-/* CONSULTAR ACESSOS */
-
-app.get(
-  '/api/acessos',
-  protegido,
-  async (req, res) => {
-    try {
-      const resultado = await db.query(`
-        SELECT
-          id,
-          identificacao,
-          nome,
-          apelido,
-          criado_em
-        FROM acessos
-        ORDER BY id DESC
-      `);
-
-      return res.json(resultado.rows);
-    } catch (erro) {
-      console.error(
-        'Erro ao consultar acessos:',
-        erro
-      );
-
-      return res.status(500).json({
-        mensagem:
-          'Erro ao consultar os acessos.'
-      });
-    }
-  }
-);
-
-/* INICIAR SERVIDOR */
-
-async function iniciarServidor() {
-  try {
-    await prepararBanco();
-
-    console.log(
-      'Conexão com PostgreSQL realizada.'
-    );
-
-    app.listen(
-      PORT,
-      '0.0.0.0',
-      () => {
-        console.log(
-          `Servidor ativo na porta ${PORT}`
-        );
-      }
-    );
-  } catch (erro) {
-    console.error(
-      'Erro ao iniciar o servidor:',
-      erro
-    );
-
-    process.exit(1);
-  }
-}
-
-iniciarServidor();
+  } catch (erro)
