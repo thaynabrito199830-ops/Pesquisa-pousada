@@ -1,28 +1,301 @@
-const express=require('express');
-const session=require('express-session');
-const sqlite3=require('sqlite3').verbose();
-const path=require('path');
-const crypto=require('crypto');
-const app=express();
-const db=new sqlite3.Database(path.join(__dirname,'respostas.db'));
-const PORT=process.env.PORT||3000;
-const ADMIN_USER=process.env.ADMIN_USER||'admin';
-const ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||'troque-esta-senha';
-const SESSION_SECRET=process.env.SESSION_SECRET||crypto.randomBytes(32).toString('hex');
+const express = require('express');
+const session = require('express-session');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const crypto = require('crypto');
+
+const app = express();
+
+const db = new sqlite3.Database(
+    path.join(__dirname,'respostas.db')
+);
+
+const PORT = process.env.PORT || 3000;
+
+const ADMIN_USER =
+process.env.ADMIN_USER || 'admin';
+
+const ADMIN_PASSWORD =
+process.env.ADMIN_PASSWORD || 'troque-esta-senha';
+
+const SESSION_SECRET =
+process.env.SESSION_SECRET ||
+crypto.randomBytes(32).toString('hex');
+
 app.set('trust proxy',1);
+
 app.use(express.json({limit:'20kb'}));
-app.use(session({secret:SESSION_SECRET,resave:false,saveUninitialized:false,cookie:{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',maxAge:30*60*1000}}));
-app.use(express.static(path.join(__dirname,'public')));
+
+app.use(session({
+    secret:SESSION_SECRET,
+    resave:false,
+    saveUninitialized:false,
+    cookie:{
+        httpOnly:true,
+        sameSite:'lax',
+        secure:process.env.NODE_ENV==='production',
+        maxAge:30*60*1000
+    }
+}));
+
+app.use(
+    express.static(
+        path.join(__dirname,'public')
+    )
+);
+
 db.serialize(()=>{
- db.run(`CREATE TABLE IF NOT EXISTS acessos(id INTEGER PRIMARY KEY AUTOINCREMENT,identificacao TEXT NOT NULL,criado_em TEXT DEFAULT CURRENT_TIMESTAMP)`);
- db.run(`CREATE TABLE IF NOT EXISTS respostas(id INTEGER PRIMARY KEY AUTOINCREMENT,identificacao TEXT,nota INTEGER NOT NULL CHECK(nota BETWEEN 1 AND 5),limpeza INTEGER NOT NULL CHECK(limpeza BETWEEN 1 AND 5),atendimento INTEGER NOT NULL CHECK(atendimento BETWEEN 1 AND 5),recomendaria TEXT NOT NULL CHECK(recomendaria IN ('sim','nao')),comentario TEXT,criado_em TEXT DEFAULT CURRENT_TIMESTAMP)`);
+
+    db.run(`
+    CREATE TABLE IF NOT EXISTS acessos(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        apelido TEXT NOT NULL,
+        criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    `);
+
+    db.run(`
+    CREATE TABLE IF NOT EXISTS respostas(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        identificacao TEXT,
+        nota INTEGER NOT NULL CHECK(nota BETWEEN 1 AND 5),
+        limpeza INTEGER NOT NULL CHECK(limpeza BETWEEN 1 AND 5),
+        atendimento INTEGER NOT NULL CHECK(atendimento BETWEEN 1 AND 5),
+        recomendaria TEXT NOT NULL CHECK(recomendaria IN ('sim','nao')),
+        comentario TEXT,
+        criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    `);
+
 });
-const protegido=(req,res,next)=>req.session.admin?next():res.status(401).json({mensagem:'Acesso não autorizado.'});
-app.post('/api/entrada',(req,res)=>{const identificacao=String(req.body.identificacao||'').trim().slice(0,120);if(!identificacao)return res.status(400).json({mensagem:'Informe um nome, apelido ou e-mail.'});db.run('INSERT INTO acessos(identificacao) VALUES(?)',[identificacao],function(err){if(err)return res.status(500).json({mensagem:'Não foi possível registrar a entrada.'});req.session.participante=identificacao;res.status(201).json({mensagem:'Entrada registrada.'});});});
-app.get('/api/participante',(req,res)=>res.json({identificado:!!req.session.participante,identificacao:req.session.participante||null}));
-app.post('/api/respostas',(req,res)=>{if(!req.session.participante)return res.status(401).json({mensagem:'Identifique-se antes de responder.'});const{nota,limpeza,atendimento,recomendaria,comentario=''}=req.body;const n=[nota,limpeza,atendimento].map(Number);if(n.some(x=>!Number.isInteger(x)||x<1||x>5)||!['sim','nao'].includes(recomendaria))return res.status(400).json({mensagem:'Revise os campos obrigatórios.'});db.run('INSERT INTO respostas(identificacao,nota,limpeza,atendimento,recomendaria,comentario) VALUES(?,?,?,?,?,?)',[req.session.participante,...n,recomendaria,String(comentario).trim().slice(0,1000)],function(err){if(err)return res.status(500).json({mensagem:'Erro ao registrar.'});res.status(201).json({mensagem:'Obrigado! Sua opinião foi registrada.',id:this.lastID});});});
-app.post('/api/login',(req,res)=>{if(String(req.body.usuario||'')===ADMIN_USER&&String(req.body.senha||'')===ADMIN_PASSWORD){req.session.admin=true;return res.json({mensagem:'Login realizado.'});}res.status(401).json({mensagem:'Usuário ou senha incorretos.'});});
-app.post('/api/logout',(req,res)=>req.session.destroy(()=>res.json({mensagem:'Sessão encerrada.'})));
-app.get('/api/respostas',protegido,(req,res)=>db.all('SELECT * FROM respostas ORDER BY id DESC',[],(e,r)=>e?res.status(500).json({mensagem:'Erro ao consultar.'}):res.json(r)));
-app.get('/api/acessos',protegido,(req,res)=>db.all('SELECT * FROM acessos ORDER BY id DESC',[],(e,r)=>e?res.status(500).json({mensagem:'Erro ao consultar.'}):res.json(r)));
-app.listen(PORT,'0.0.0.0',()=>console.log(`Servidor ativo na porta ${PORT}`));
+
+const protegido = (req,res,next)=>
+req.session.admin
+? next()
+: res.status(401).json({
+    mensagem:'Acesso não autorizado.'
+});
+
+app.post('/api/entrada',(req,res)=>{
+
+    const nome =
+    String(req.body.nome || '')
+    .trim()
+    .slice(0,120);
+
+    const apelido =
+    String(req.body.apelido || '')
+    .trim()
+    .slice(0,80);
+
+    if(!nome || !apelido){
+
+        return res.status(400).json({
+            mensagem:'Preencha nome e apelido.'
+        });
+
+    }
+
+    db.run(
+        'INSERT INTO acessos(nome,apelido) VALUES(?,?)',
+        [nome,apelido],
+
+        function(err){
+
+            if(err){
+
+                return res.status(500).json({
+                    mensagem:'Erro ao registrar.'
+                });
+
+            }
+
+            req.session.participante = {
+                nome,
+                apelido
+            };
+
+            res.status(201).json({
+                mensagem:'Entrada registrada.'
+            });
+
+        }
+    );
+
+});
+
+app.get('/api/participante',(req,res)=>{
+
+    res.json({
+
+        identificado:
+        !!req.session.participante,
+
+        nome:
+        req.session.participante?.nome || null,
+
+        apelido:
+        req.session.participante?.apelido || null
+
+    });
+
+});
+
+app.post('/api/respostas',(req,res)=>{
+
+    if(!req.session.participante){
+
+        return res.status(401).json({
+            mensagem:'Identifique-se antes.'
+        });
+
+    }
+
+    const {
+        nota,
+        limpeza,
+        atendimento,
+        recomendaria,
+        comentario=''
+    } = req.body;
+
+    const n = [
+        nota,
+        limpeza,
+        atendimento
+    ].map(Number);
+
+    if(
+        n.some(x =>
+            !Number.isInteger(x) ||
+            x < 1 ||
+            x > 5
+        ) ||
+        !['sim','nao'].includes(recomendaria)
+    ){
+
+        return res.status(400).json({
+            mensagem:'Revise os campos obrigatórios.'
+        });
+
+    }
+
+    db.run(
+
+        `INSERT INTO respostas
+        (
+            identificacao,
+            nota,
+            limpeza,
+            atendimento,
+            recomendaria,
+            comentario
+        )
+        VALUES(?,?,?,?,?,?)`,
+
+        [
+            `${req.session.participante.nome} (${req.session.participante.apelido})`,
+            ...n,
+            recomendaria,
+            String(comentario)
+            .trim()
+            .slice(0,1000)
+        ],
+
+        function(err){
+
+            if(err){
+
+                return res.status(500).json({
+                    mensagem:'Erro ao registrar.'
+                });
+
+            }
+
+            res.status(201).json({
+                mensagem:'Obrigado! Sua opinião foi registrada.'
+            });
+
+        }
+
+    );
+
+});
+
+app.post('/api/login',(req,res)=>{
+
+    if(
+        String(req.body.usuario || '') === ADMIN_USER &&
+        String(req.body.senha || '') === ADMIN_PASSWORD
+    ){
+
+        req.session.admin = true;
+
+        return res.json({
+            mensagem:'Login realizado.'
+        });
+
+    }
+
+    res.status(401).json({
+        mensagem:'Usuário ou senha incorretos.'
+    });
+
+});
+
+app.post('/api/logout',(req,res)=>{
+
+    req.session.destroy(()=>
+        res.json({
+            mensagem:'Sessão encerrada.'
+        })
+    );
+
+});
+
+app.get(
+'/api/respostas',
+protegido,
+(req,res)=>{
+
+    db.all(
+        'SELECT * FROM respostas ORDER BY id DESC',
+        [],
+        (e,r)=>
+        e
+        ? res.status(500).json({
+            mensagem:'Erro'
+        })
+        : res.json(r)
+    );
+
+});
+
+app.get(
+'/api/acessos',
+protegido,
+(req,res)=>{
+
+    db.all(
+        'SELECT * FROM acessos ORDER BY id DESC',
+        [],
+        (e,r)=>
+        e
+        ? res.status(500).json({
+            mensagem:'Erro'
+        })
+        : res.json(r)
+    );
+
+});
+
+app.listen(
+    PORT,
+    '0.0.0.0',
+    ()=>{
+        console.log(
+            `Servidor ativo na porta ${PORT}`
+        );
+    }
+);
