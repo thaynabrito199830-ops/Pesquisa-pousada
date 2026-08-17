@@ -1,1 +1,338 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Painel</title><style>body{font-family:system-ui;background:#f3f6f4;padding:28px}.wrap{max-width:1100px;margin:auto}.top{display:flex;justify-content:space-between}.tabs{display:flex;gap:8px;margin:20px 0}button{background:#28594c;color:#fff;border:0;padding:10px 16px;border-radius:8px}section{display:none}section.on{display:block}table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:11px;border-bottom:1px solid #ddd;text-align:left}th{background:#28594c;color:#fff}</style></head><body><main class="wrap"><div class="top"><h1>Painel administrativo</h1><button id="sair">Sair</button></div><div class="tabs"><button onclick="show('avaliacoes')">Avaliações</button><button onclick="show('acessos')">Acessos</button></div><section id="avaliacoes" class="on"><h2>Avaliações</h2><div style="overflow:auto"><table><thead><tr><th>ID</th><th>Identificação</th><th>Nota</th><th>Limpeza</th><th>Atendimento</th><th>Recomenda</th><th>Comentário</th><th>Data</th></tr></thead><tbody id="rr"></tbody></table></div></section><section id="acessos"><h2>Acessos</h2><table><thead><tr><th>ID</th><th>Identificação</th><th>Data</th></tr></thead><tbody id="ra"></tbody></table></section></main><script>const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function show(id){document.querySelectorAll('section').forEach(x=>x.classList.remove('on'));document.getElementById(id).classList.add('on')}async function get(u){const r=await fetch(u);if(r.status===401){location='/login.html';return[]}return r.json()}async function load(){const[r,a]=await Promise.all([get('/api/respostas'),get('/api/acessos')]);rr.innerHTML=r.map(x=>`<tr><td>${x.id}</td><td>${esc(x.identificacao)}</td><td>${x.nota}</td><td>${x.limpeza}</td><td>${x.atendimento}</td><td>${esc(x.recomendaria)}</td><td>${esc(x.comentario)}</td><td>${esc(x.criado_em)}</td></tr>`).join('');ra.innerHTML=a.map(x=>`<tr><td>${x.id}</td><td>${esc(x.identificacao)}</td><td>${esc(x.criado_em)}</td></tr>`).join('')}sair.onclick=async()=>{await fetch('/api/logout',{method:'POST'});location='/login.html'};load()</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Painel</title>
+
+  <style>
+    body {
+      font-family: system-ui;
+      background: #f3f6f4;
+      padding: 28px;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin: 20px 0;
+    }
+
+    button {
+      background: #28594c;
+      color: #fff;
+      border: 0;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1f493e;
+    }
+
+    .excluir {
+      background: #b42318;
+      margin-bottom: 12px;
+    }
+
+    .excluir:hover {
+      background: #8f1c14;
+    }
+
+    section {
+      display: none;
+    }
+
+    section.on {
+      display: block;
+    }
+
+    .tabela {
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    th,
+    td {
+      padding: 11px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background: #28594c;
+      color: #fff;
+    }
+
+    .selecao {
+      width: 45px;
+      text-align: center;
+    }
+
+    .mensagem {
+      min-height: 22px;
+      margin: 10px 0;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <div class="top">
+      <h1>Painel administrativo</h1>
+      <button id="sair" type="button">Sair</button>
+    </div>
+
+    <div class="tabs">
+      <button
+        type="button"
+        onclick="mostrar('avaliacoes')"
+      >
+        Avaliações
+      </button>
+
+      <button
+        type="button"
+        onclick="mostrar('acessos')"
+      >
+        Acessos
+      </button>
+    </div>
+
+    <div id="mensagem" class="mensagem"></div>
+
+    <section id="avaliacoes" class="on">
+      <h2>Avaliações</h2>
+
+      <button
+        id="excluirAvaliacoes"
+        class="excluir"
+        type="button"
+      >
+        Excluir avaliações selecionadas
+      </button>
+
+      <div class="tabela">
+        <table>
+          <thead>
+            <tr>
+              <th class="selecao">
+                <input
+                  id="todosAvaliacoes"
+                  type="checkbox"
+                  title="Selecionar todas"
+                >
+              </th>
+
+              <th>ID</th>
+              <th>Identificação</th>
+              <th>Nota</th>
+              <th>Limpeza</th>
+              <th>Atendimento</th>
+              <th>Recomenda</th>
+              <th>Comentário</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+
+          <tbody id="rr"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="acessos">
+      <h2>Acessos</h2>
+
+      <button
+        id="excluirAcessos"
+        class="excluir"
+        type="button"
+      >
+        Excluir acessos selecionados
+      </button>
+
+      <div class="tabela">
+        <table>
+          <thead>
+            <tr>
+              <th class="selecao">
+                <input
+                  id="todosAcessos"
+                  type="checkbox"
+                  title="Selecionar todos"
+                >
+              </th>
+
+              <th>ID</th>
+              <th>Identificação</th>
+              <th>Nome</th>
+              <th>Apelido</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+
+          <tbody id="ra"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const rr = document.getElementById('rr');
+    const ra = document.getElementById('ra');
+
+    const mensagem =
+      document.getElementById('mensagem');
+
+    function escapar(valor) {
+      return String(valor ?? '')
+        .replace(
+          /[&<>"']/g,
+          caractere => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+          })[caractere]
+        );
+    }
+
+    function mostrar(id) {
+      document
+        .querySelectorAll('section')
+        .forEach(secao => {
+          secao.classList.remove('on');
+        });
+
+      document
+        .getElementById(id)
+        .classList.add('on');
+    }
+
+    async function consultar(endereco) {
+      const resposta = await fetch(endereco);
+
+      if (resposta.status === 401) {
+        window.location.href = '/login.html';
+        return [];
+      }
+
+      return resposta.json();
+    }
+
+    async function carregar() {
+      mensagem.textContent = '';
+
+      try {
+        const [respostas, acessos] =
+          await Promise.all([
+            consultar('/api/respostas'),
+            consultar('/api/acessos')
+          ]);
+
+        rr.innerHTML = respostas
+          .map(item => `
+            <tr>
+              <td class="selecao">
+                <input
+                  type="checkbox"
+                  class="seletor-avaliacao"
+                  value="${item.id}"
+                >
+              </td>
+
+              <td>${item.id}</td>
+              <td>${escapar(item.identificacao)}</td>
+              <td>${item.nota}</td>
+              <td>${item.limpeza}</td>
+              <td>${item.atendimento}</td>
+              <td>${escapar(item.recomendaria)}</td>
+              <td>${escapar(item.comentario)}</td>
+              <td>${escapar(item.criado_em)}</td>
+            </tr>
+          `)
+          .join('');
+
+        ra.innerHTML = acessos
+          .map(item => `
+            <tr>
+              <td class="selecao">
+                <input
+                  type="checkbox"
+                  class="seletor-acesso"
+                  value="${item.id}"
+                >
+              </td>
+
+              <td>${item.id}</td>
+              <td>${escapar(item.identificacao)}</td>
+              <td>${escapar(item.nome)}</td>
+              <td>${escapar(item.apelido)}</td>
+              <td>${escapar(item.criado_em)}</td>
+            </tr>
+          `)
+          .join('');
+
+        document.getElementById(
+          'todosAvaliacoes'
+        ).checked = false;
+
+        document.getElementById(
+          'todosAcessos'
+        ).checked = false;
+      } catch (erro) {
+        console.error(erro);
+
+        mensagem.textContent =
+          'Não foi possível carregar os registros.';
+      }
+    }
+
+    function selecionarTodos(
+      seletor,
+      selecionado
+    ) {
+      document
+        .querySelectorAll(seletor)
+        .forEach(caixa => {
+          caixa.checked = selecionado;
+        });
+    }
+
+    function obterSelecionados(seletor) {
+      return Array.from(
+        document.querySelectorAll(
+          `${seletor}:checked`
+        )
+      ).map(caixa => Number(caixa.value));
+    }
+
+    async function excluirRegistros(
+      rota,
+      seletor
+    ) {
+      const ids = obterSelecionados(seletor);
