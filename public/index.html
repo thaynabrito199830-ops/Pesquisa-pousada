@@ -16,40 +16,54 @@
     }
 
     body {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+
       min-height: 100vh;
       margin: 0;
       padding: 30px;
+
       font-family: system-ui, sans-serif;
       color: #102f29;
 
       background:
         linear-gradient(
-          rgba(3, 12, 25, 0.25),
-          rgba(3, 12, 25, 0.40)
+          rgba(3, 12, 25, 0.20),
+          rgba(3, 12, 25, 0.35)
         ),
         url("https://wallpaperaccess.com/full/1623315.jpg")
         center / cover no-repeat fixed;
     }
 
     .card {
+      position: relative;
+      z-index: 10;
+
+      display: block;
+      visibility: visible;
+      opacity: 1;
+
+      width: 100%;
       max-width: 700px;
-      margin: auto;
+      margin: 0 auto;
       padding: 34px;
 
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.55);
       border-radius: 20px;
 
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(9px);
+      -webkit-backdrop-filter: blur(9px);
 
-      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.40);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
     }
 
     h1 {
-      margin-top: 0;
-      font-family: Georgia, serif;
+      margin: 0 0 24px;
       color: #12372f;
+      font-family: Georgia, serif;
+      font-size: 34px;
     }
 
     fieldset {
@@ -60,4 +74,311 @@
 
     legend {
       margin-bottom: 10px;
-     
+      color: #17352d;
+      font-weight: 700;
+    }
+
+    .op {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .op label {
+      padding: 10px 16px;
+
+      color: #17352d;
+      background: rgba(255, 255, 255, 0.74);
+
+      border: 1px solid rgba(35, 75, 65, 0.30);
+      border-radius: 9px;
+
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .op label:hover {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: #28594c;
+    }
+
+    .op label:has(input:checked) {
+      color: #ffffff;
+      background: #28594c;
+      border-color: #28594c;
+    }
+
+    .op input {
+      margin-right: 5px;
+    }
+
+    label[for="comentario"] {
+      display: block;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    textarea {
+      display: block;
+
+      width: 100%;
+      min-height: 110px;
+      margin: 8px 0 20px;
+      padding: 12px;
+
+      color: #17352d;
+      background: rgba(255, 255, 255, 0.74);
+
+      border: 1px solid rgba(35, 75, 65, 0.30);
+      border-radius: 9px;
+
+      resize: vertical;
+      font: inherit;
+    }
+
+    textarea:focus {
+      outline: 2px solid #28594c;
+      border-color: transparent;
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+
+      border: 0;
+      border-radius: 10px;
+
+      color: #ffffff;
+      background: #28594c;
+
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #17483c;
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    .msg {
+      min-height: 24px;
+      margin-top: 15px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 16px;
+        background-attachment: scroll;
+      }
+
+      .card {
+        padding: 24px 18px;
+        background: rgba(255, 255, 255, 0.80);
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .op label {
+        padding: 9px 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <form class="card" id="form">
+    <h1>Pesquisa de satisfação</h1>
+
+    <fieldset>
+      <legend>Nota geral *</legend>
+      <div class="op" id="nota"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Agilidade *</legend>
+      <div class="op" id="limpeza"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Atendimento *</legend>
+      <div class="op" id="atendimento"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Resolvido? *</legend>
+
+      <div class="op">
+        <label>
+          <input
+            type="radio"
+            name="recomendaria"
+            value="sim"
+            required
+          >
+          Sim
+        </label>
+
+        <label>
+          <input
+            type="radio"
+            name="recomendaria"
+            value="nao"
+          >
+          Não
+        </label>
+      </div>
+    </fieldset>
+
+    <label for="comentario">
+      Comentário opcional
+    </label>
+
+    <textarea
+      id="comentario"
+      name="comentario"
+      maxlength="1000"
+    ></textarea>
+
+    <button id="botaoEnviar" type="submit">
+      Enviar avaliação
+    </button>
+
+    <div id="msg" class="msg"></div>
+  </form>
+
+  <script>
+    const form =
+      document.getElementById('form');
+
+    const comentario =
+      document.getElementById('comentario');
+
+    const msg =
+      document.getElementById('msg');
+
+    const botaoEnviar =
+      document.getElementById('botaoEnviar');
+
+    /*
+      Verificação temporariamente desativada.
+
+      Depois que o formulário estiver aparecendo normalmente,
+      você pode remover os símbolos de comentário deste bloco.
+
+    fetch('/api/participante')
+      .then(resposta => resposta.json())
+      .then(participante => {
+        if (!participante.identificado) {
+          window.location.href = '/entrar.html';
+        }
+      })
+      .catch(() => {
+        window.location.href = '/entrar.html';
+      });
+    */
+
+    for (
+      const id of [
+        'nota',
+        'limpeza',
+        'atendimento'
+      ]
+    ) {
+      for (let numero = 1; numero <= 5; numero++) {
+        document
+          .getElementById(id)
+          .insertAdjacentHTML(
+            'beforeend',
+            `
+              <label>
+                <input
+                  type="radio"
+                  name="${id}"
+                  value="${numero}"
+                  required
+                >
+                ${numero}
+              </label>
+            `
+          );
+      }
+    }
+
+    form.addEventListener(
+      'submit',
+      async event => {
+        event.preventDefault();
+
+        msg.textContent = '';
+
+        const dados =
+          new FormData(form);
+
+        botaoEnviar.disabled = true;
+        botaoEnviar.textContent = 'Enviando...';
+
+        try {
+          const resposta =
+            await fetch('/api/respostas', {
+              method: 'POST',
+
+              headers: {
+                'Content-Type': 'application/json'
+              },
+
+              body: JSON.stringify({
+                nota: Number(
+                  dados.get('nota')
+                ),
+
+                limpeza: Number(
+                  dados.get('limpeza')
+                ),
+
+                atendimento: Number(
+                  dados.get('atendimento')
+                ),
+
+                recomendaria:
+                  dados.get('recomendaria'),
+
+                comentario:
+                  comentario.value.trim()
+              })
+            });
+
+          const resultado =
+            await resposta.json();
+
+          msg.textContent =
+            resultado.mensagem ||
+            'Avaliação enviada.';
+
+          if (resposta.ok) {
+            form.reset();
+          }
+        } catch (erro) {
+          console.error(erro);
+
+          msg.textContent =
+            'Não foi possível enviar a avaliação.';
+        } finally {
+          botaoEnviar.disabled = false;
+          botaoEnviar.textContent =
+            'Enviar avaliação';
+        }
+      }
+    );
+  </script>
+</body>
+</html>
