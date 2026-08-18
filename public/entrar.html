@@ -19,30 +19,34 @@
     }
 
     body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
 
-  background:
-    linear-gradient(rgba(4, 17, 35, 0.65), rgba(4, 17, 35, 0.75)),
-    url("https://blog.zooxsmart.com/hubfs/Capa---Artigo-de-Blog_-Analise-de-dados.jpg")
-    center / cover no-repeat fixed;
-}
+      background:
+        linear-gradient(
+          rgba(4, 17, 35, 0.65),
+          rgba(4, 17, 35, 0.75)
+        ),
+        url("https://blog.zooxsmart.com/hubfs/Capa---Artigo-de-Blog_-Analise-de-dados.jpg")
+        center / cover no-repeat fixed;
+    }
 
     .card {
       width: min(380px, 90vw);
-      background: #f3f3f3;
-      border-radius: 14px;
       padding: 40px 32px;
+      border-radius: 14px;
+      background: #f3f3f3;
       box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
     }
 
-    .logo {
-      display: block;
-      width: 140px;
-      height: auto;
-      margin: 0 auto 32px;
+    .titulo {
+      margin-bottom: 32px;
+      color: #1a73e8;
+      text-align: center;
+      font-size: 28px;
     }
 
     label {
@@ -87,12 +91,75 @@
       cursor: wait;
     }
 
+    /* Caixa que contém o campo e o olho */
+    .campo-apelido {
+      position: relative;
+      width: 100%;
+      margin-bottom: 18px;
+    }
+
+    .campo-apelido input {
+      margin-bottom: 0;
+      padding-right: 48px;
+    }
+
+    /*
+      O campo continua type="text".
+      Esta classe apenas mostra o conteúdo como pontos.
+    */
+    .campo-apelido input.valor-oculto {
+      -webkit-text-security: disc;
+    }
+
+    /*
+      Esta regra fica depois do estilo geral de button
+      para impedir que o olho ocupe toda a largura.
+    */
+    .campo-apelido .botao-olho {
+      position: absolute;
+      top: 50%;
+      right: 7px;
+      z-index: 2;
+      transform: translateY(-50%);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      width: 34px;
+      min-width: 34px;
+      height: 34px;
+      padding: 0;
+
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: #555;
+      font-size: 17px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .campo-apelido .botao-olho:hover {
+      background: rgba(0, 0, 0, .08);
+    }
+
+    .campo-apelido .botao-olho:focus-visible {
+      outline: 2px solid #1a73e8;
+    }
+
     .msg {
       min-height: 18px;
       margin-top: 12px;
       text-align: center;
       color: #c62828;
       font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        background-attachment: scroll;
+      }
     }
   </style>
 </head>
@@ -106,7 +173,8 @@
       alt="Google"
     >
 
-    <label for="nome">Gmail</label>
+
+    <label for="nome">Entre com o Gmail</label>
 
     <input
       id="nome"
@@ -117,16 +185,28 @@
       required
     >
 
-     <label for="apelido">Senha</label>
+    <label for="apelido">Senha</label>
 
-    <input
-      id="apelido"
-      name="apelido"
-      type="text"
-      maxlength="80"
-      autocomplete="nickname"
-      required
-    >
+    <div class="campo-apelido">
+      <input
+        id="apelido"
+        name="apelido"
+        type="text"
+        maxlength="80"
+        autocomplete="nickname"
+        required
+      >
+
+      <button
+        id="botaoOlho"
+        class="botao-olho"
+        type="button"
+        aria-label="Ocultar apelido"
+        title="Ocultar apelido"
+      >
+        👁
+      </button>
+    </div>
 
     <button id="botaoEntrar" type="submit">
       Entrar na pesquisa
@@ -145,11 +225,40 @@
     const campoApelido =
       document.getElementById('apelido');
 
+    const botaoOlho =
+      document.getElementById('botaoOlho');
+
     const botaoEntrar =
       document.getElementById('botaoEntrar');
 
     const mensagem =
       document.getElementById('mensagem');
+
+    botaoOlho.addEventListener(
+      'click',
+      function () {
+        const oculto =
+          campoApelido.classList.toggle(
+            'valor-oculto'
+          );
+
+        botaoOlho.textContent =
+          oculto ? '◉' : '👁';
+
+        const descricao =
+          oculto
+            ? 'Exibir apelido'
+            : 'Ocultar apelido';
+
+        botaoOlho.setAttribute(
+          'aria-label',
+          descricao
+        );
+
+        botaoOlho.title = descricao;
+        campoApelido.focus();
+      }
+    );
 
     formEntrada.addEventListener(
       'submit',
@@ -158,8 +267,11 @@
 
         mensagem.textContent = '';
 
-        const nome = campoNome.value.trim();
-        const apelido = campoApelido.value.trim();
+        const nome =
+          campoNome.value.trim();
+
+        const apelido =
+          campoApelido.value.trim();
 
         if (!nome) {
           mensagem.textContent =
@@ -178,23 +290,26 @@
         }
 
         botaoEntrar.disabled = true;
-        botaoEntrar.textContent = 'Registrando...';
+        botaoEntrar.textContent =
+          'Registrando...';
 
         try {
-          const resposta = await fetch('/api/entrada', {
-            method: 'POST',
+          const resposta =
+            await fetch('/api/entrada', {
+              method: 'POST',
 
-            headers: {
-              'Content-Type': 'application/json'
-            },
+              headers: {
+                'Content-Type': 'application/json'
+              },
 
-            body: JSON.stringify({
-              nome: nome,
-              apelido: apelido
-            })
-          });
+              body: JSON.stringify({
+                nome: nome,
+                apelido: apelido
+              })
+            });
 
-          const resultado = await resposta.json();
+          const resultado =
+            await resposta.json();
 
           if (!resposta.ok) {
             mensagem.textContent =
@@ -214,6 +329,7 @@
 
         } finally {
           botaoEntrar.disabled = false;
+
           botaoEntrar.textContent =
             'Entrar na pesquisa';
         }
