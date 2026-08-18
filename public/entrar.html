@@ -119,18 +119,22 @@
 
     <label for="apelido">Senha</label>
 
-    <input
-      id="apelido"
-      name="apelido"
-      type="text"
-      maxlength="80"
-      autocomplete="nickname"
-      required
-    >
+<div class="campo-senha">
+  <input
+    id="apelido"
+    name="apelido"
+    type="password"
+    maxlength="80"
+    autocomplete="current-password"
+    required
+  >
 
-    <button id="botaoEntrar" type="submit">
-      Entrar na pesquisa
-    </button>
+ 
+</div>
+
+<button class="botao-entrar" type="submit">
+  Entrar na pesquisa
+</button>
 
     <div id="mensagem" class="msg"></div>
   </form>
