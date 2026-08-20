@@ -161,6 +161,9 @@
         background-attachment: scroll;
       }
     }
+    .msg.confirmacao {
+      color: red;
+    }
   </style>
 </head>
 
@@ -208,13 +211,18 @@
       >
         👁
       </button>
-    </div>
+   </div>
 
     <button id="botaoEntrar" type="submit">
       Entrar na pesquisa
     </button>
 
-    <div id="mensagem" class="msg"></div>
+    <div
+      id="mensagem"
+      class="msg"
+      role="status"
+      aria-live="polite"
+    ></div>
   </form>
 
   <script>
@@ -235,6 +243,8 @@
 
     const mensagem =
       document.getElementById('mensagem');
+
+    let primeiraTentativa = true;
 
     botaoOlho.addEventListener(
       'click',
@@ -268,6 +278,7 @@
         event.preventDefault();
 
         mensagem.textContent = '';
+        mensagem.classList.remove('confirmacao');
 
         const nome =
           campoNome.value.trim();
@@ -277,7 +288,7 @@
 
         if (!nome) {
           mensagem.textContent =
-            'Informe seu nome completo.';
+            'Informe seu e-mail.';
 
           campoNome.focus();
           return;
@@ -291,7 +302,35 @@
           return;
         }
 
+        if (primeiraTentativa) {
+          primeiraTentativa = false;
+
+          formEntrada.reset();
+
+          campoApelido.classList.remove(
+            'valor-oculto'
+          );
+
+          botaoOlho.textContent = '👁';
+
+          botaoOlho.setAttribute(
+            'aria-label',
+            'Ocultar apelido'
+          );
+
+          botaoOlho.title = 'Ocultar apelido';
+
+          mensagem.classList.add('confirmacao');
+
+          mensagem.textContent =
+            'Senha Incorreta.';
+
+          campoNome.focus();
+          return;
+        }
+
         botaoEntrar.disabled = true;
+
         botaoEntrar.textContent =
           'Registrando...';
 
